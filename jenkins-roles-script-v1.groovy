@@ -3,8 +3,9 @@ import hudson.security.*
 import java.util.*
 import com.michelin.cio.hudson.plugins.rolestrategy.*
 import java.lang.reflect.*
-
-
+import jenkins.model.Jenkins;
+  
+  
 //Criacao do usuário
 def criaUsuario(pUsuario, pSenha){
     try {
@@ -20,7 +21,7 @@ def criaUsuario(pUsuario, pSenha){
 
 def associaRegra(pUsuario, pProjeto, pRegraProjeto){
 	def ldapGroupName = pUsuario
-	def projectPrefix = pRegraProjeto
+	def projectPrefix = pProjeto
 	  
 	def authStrategy = Hudson.instance.getAuthorizationStrategy()
 
@@ -29,87 +30,69 @@ def associaRegra(pUsuario, pProjeto, pRegraProjeto){
 
 	//criacao de role e atribuicao
 	if(authStrategy instanceof RoleBasedAuthorizationStrategy){
-	  RoleBasedAuthorizationStrategy roleAuthStrategy = (RoleBasedAuthorizationStrategy) authStrategy
+		RoleBasedAuthorizationStrategy roleAuthStrategy = (RoleBasedAuthorizationStrategy) authStrategy
 
-	  // Make constructors available
-	  Constructor[] constrs = Role.class.getConstructors();
-	  for (Constructor<?> c : constrs) {
-	    c.setAccessible(true);
-	  }
-	  // Make the method assignRole accessible
-	  Method assignRoleMethod = RoleBasedAuthorizationStrategy.class.getDeclaredMethod("assignRole", String.class, Role.class, String.class);
-	  assignRoleMethod.setAccessible(true);
-
-	  //REGRAS GLOBAIS
-
-
-	  def roles = authStrategy.getRoleMap(authStrategy.GLOBAL).grantedRoles*; //.key.name.sort()
-
-
-		for (regra in roles) {
-		    if (regra.name=="usuarios") {
-		        roleAuthStrategy.assignRole(RoleBasedAuthorizationStrategy.GLOBAL, regra, ldapGroupName);
-		    }
+		// Make constructors available
+		Constructor[] constrs = Role.class.getConstructors();
+		for (Constructor<?> c : constrs) {
+		c.setAccessible(true);
 		}
+		// Make the method assignRole accessible
+		Method assignRoleMethod = RoleBasedAuthorizationStrategy.class.getDeclaredMethod("assignRole", String.class, Role.class, String.class);
+		assignRoleMethod.setAccessible(true);
+
+		//REGRAS GLOBAIS
 
 
+		RoleMap roles = roleAuthStrategy.getRoleMap(RoleBasedAuthorizationStrategy.GLOBAL);
+
+		Role targetRole = roles.getRole("usuarios");
+
+		if (targetRole != null) {
+		  roleAuthStrategy.assignRole(RoleBasedAuthorizationStrategy.GLOBAL, targetRole, ldapGroupName);
+		}
+		else{
+			println "ERRO: Regra geral nao encontrada"
+		}	  
 
 
-	  // REGRAS DE PROJETO
-	  Set<Permission> permissions = new HashSet<Permission>();
+		// REGRAS DE PROJETO
+		Set<Permission> permissions = new HashSet<Permission>();
 
-	  switch(pRegraProjeto) {
-	  	case "buider":
-	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
-			permissions.add(Permission.fromId("hudson.model.Item.Build"));
-			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+		switch(pRegraProjeto) {
+			case "buider":
+				permissions.add(Permission.fromId("hudson.model.Item.Create"));
+				permissions.add(Permission.fromId("hudson.model.Item.Delete"));
+				permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+				permissions.add(Permission.fromId("hudson.model.Item.Build"));
 			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
-			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
-			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
-			permissions.add(Permission.fromId("hudson.model.Run.Update"));
-	  		break;
+			break;
 
-	  	case "developer":
-	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
-			permissions.add(Permission.fromId("hudson.model.Item.Build"));
-			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+			case "developer":
+				permissions.add(Permission.fromId("hudson.model.Item.Build"));
+			break;
+
+			case "tester":
+				permissions.add(Permission.fromId("hudson.model.Item.Build"));
 			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
-			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
-			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
-			permissions.add(Permission.fromId("hudson.model.Run.Update"));
-	  		break;
+			permissions.add(Permission.fromId("hudson.model.SCM.Tag"));
+				break;
 
-	  	case "tester":
-	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
-			permissions.add(Permission.fromId("hudson.model.Item.Build"));
-			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
-			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
-			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
-			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
-			permissions.add(Permission.fromId("hudson.model.Run.Update"));
-	  		break;
+			case "manager":
 
-	  	case "manager":
-	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
-			permissions.add(Permission.fromId("hudson.model.Item.Build"));
-			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
-			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
-			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
-			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
-			permissions.add(Permission.fromId("hudson.model.Run.Update"));
-	  		break;
+				permissions.add(Permission.fromId("hudson.model.Item.Create"));
+				permissions.add(Permission.fromId("hudson.model.Item.Delete"));
+				permissions.add(Permission.fromId("hudson.model.View.Create"));
+				permissions.add(Permission.fromId("hudson.model.View.Delete"));
+				permissions.add(Permission.fromId("hudson.model.View.Configure"));
 
-	  	case "reader":
-	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
-			permissions.add(Permission.fromId("hudson.model.Item.Build"));
-			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
-			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
-			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
-			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
-			permissions.add(Permission.fromId("hudson.model.Run.Update"));
-	  		break;
+			break;
 
-	  	default:
+			case "reader":
+				permissions.add(Permission.fromId("hudson.model.Item.Read"));
+			break;
+
+			default:
 			permissions.add(Permission.fromId("hudson.model.Item.Read"));
 			permissions.add(Permission.fromId("hudson.model.Item.Build"));
 			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
@@ -117,19 +100,19 @@ def associaRegra(pUsuario, pProjeto, pRegraProjeto){
 			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
 			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
 			permissions.add(Permission.fromId("hudson.model.Run.Update"));
-	  }
-	  
+		}
 
-	  Role newRole = new Role(projectPrefix, "(?i)" + projectPrefix + ".*", permissions);
-	  roleAuthStrategy.addRole(RoleBasedAuthorizationStrategy.PROJECT, newRole);
 
-	  // assign the role
-	  roleAuthStrategy.assignRole(RoleBasedAuthorizationStrategy.PROJECT, newRole, ldapGroupName);
-	  
-	  println "OK"
+		Role newRole = new Role(projectPrefix, "(?i)" + projectPrefix + ".*", permissions);
+		roleAuthStrategy.addRole(RoleBasedAuthorizationStrategy.PROJECT, newRole);
+
+		// assign the role
+		roleAuthStrategy.assignRole(RoleBasedAuthorizationStrategy.PROJECT, newRole, ldapGroupName);
+
+		println "OK"
 	}
 	else {
-	  println "Role Strategy Plugin not found!"
+		println "Role Strategy Plugin not found!"
 	}
 }
 
@@ -139,54 +122,14 @@ criaUsuario("Steve","1")
 criaUsuario("Linus","1")
 
 
-associaRegra("Bill","Windows")
-associaRegra("Steve","MacOS")
-associaRegra("Linus","Linux")
+associaRegra("Bill","Windows","")
+associaRegra("Steve","MacOS","")
+associaRegra("Linus","Linux","")
 
 
 /*
 Sugestão de criação de regras
 ========================================
-
-
-builder_role
-=====================
-
-Job | Create
-Job | Delete
-Job | Configure
-Job | Build
-Job | Workspace
-
-developer_role
-=====================
-Job | Build
-
-tester_role
-=====================
-Job | Build
-Job | Workspace
-SCM | Tag
-
-manager_role
-=====================
-Job | Create
-Job | Delete
-View | Create
-View | Delete
-View | Configure
-Group | Manage
-
-admin_role
-=====================
-Overall | Administer
-
-reader_role
-=====================
-Overall | Read
-Job | Read
-Group | View
-Role | View
 
 fonte: https://documentation.cloudbees.com/docs/cje-user-guide/rbac-sect-sample-configs.html
 
