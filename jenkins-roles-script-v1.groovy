@@ -288,9 +288,9 @@ criaRegraProjeto("Linux", "default")
 criaRegraProjeto("Linux", "builder")
 criaRegraProjeto("Linux", "reader")
 
-associaRegra("Bill","Windows-default")
-associaRegra("Steve","MacOS-builder")
-associaRegra("Linus","Linux-reader")
+associaRegraProjeto("Bill","Windows-default")
+associaRegraProjeto("Steve","MacOS-builder")
+associaRegraProjeto("Linus","Linux-reader")
 
 
 
