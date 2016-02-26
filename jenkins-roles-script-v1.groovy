@@ -72,11 +72,10 @@ def associaRegra(pUsuario, pRegraProjeto){
 			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
 			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
 			permissions.add(Permission.fromId("hudson.model.Run.Update"));
-	  		break;
 	  }
 	  
 
-	  Role newRole = new Role(projectPrefix, projectPrefix + ".*", permissions);
+	  Role newRole = new Role(projectPrefix, "(?i)" + projectPrefix + ".*", permissions);
 	  roleAuthStrategy.addRole(RoleBasedAuthorizationStrategy.PROJECT, newRole);
 
 	  // assign the role
