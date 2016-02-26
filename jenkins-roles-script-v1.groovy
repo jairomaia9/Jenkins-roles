@@ -4,12 +4,6 @@ import java.util.*
 import com.michelin.cio.hudson.plugins.rolestrategy.*
 import java.lang.reflect.*
 
-/*
-- criação usuarios
-- criação de regras
-- associação de regras
-*/
-
 
 //Criacao do usuário
 def criaUsuario(pUsuario, pSenha){
@@ -22,123 +16,58 @@ def criaUsuario(pUsuario, pSenha){
     }
 }
 
-def criaRegraProjeto( pRegraProjeto){
-
-    def estrategiaAutorizacao = Hudson.instance.getAuthorizationStrategy()
-
-    //criacao de role e atribuicao
-    if(estrategiaAutorizacao instanceof RoleBasedAuthorizationStrategy){
-      RoleBasedAuthorizationStrategy estrategiaRegra = (RoleBasedAuthorizationStrategy) estrategiaAutorizacao
-
-      // Make constructors available
-      Constructor[] constrs = Role.class.getConstructors();
-      for (Constructor<?> c : constrs) {
-        c.setAccessible(true);
-      }
-      // Make the method assignRole accessible
-      Method assignRoleMethod = RoleBasedAuthorizationStrategy.class.getDeclaredMethod("assignRole", String.class, Role.class, String.class);
-      assignRoleMethod.setAccessible(true);
-
-      // Create role
-      Set<Permission> permissoes = new HashSet<Permission>();
-      permissoes.add(Permission.fromId("hudson.model.Item.Read"));
-      permissoes.add(Permission.fromId("hudson.model.Item.Build"));
-      permissoes.add(Permission.fromId("hudson.model.Item.Workspace"));
-      permissoes.add(Permission.fromId("hudson.model.Item.Cancel"));
-      permissoes.add(Permission.fromId("hudson.model.Run.Delete"));
-      permissoes.add(Permission.fromId("hudson.model.Run.Update"));
-
-
-      // The release permission is only available when the release plugin is installed
-      /*
-      String releasePermission = Permission.fromId("hudson.model.Item.Release");
-      if (releasePermission != null) {
-        permissoes.add(releasePermission);
-      }
-      */
-      
-
-      Role novaRegra = new Role(pRegraProjeto, "(?i)" + pRegraProjeto + ".*", permissoes);
-      estrategiaRegra.addRole(RoleBasedAuthorizationStrategy.PROJECT, novaRegra);
-
-      println "Regra '"+pRegraProjeto+"' criada com sucesso."
-    }
-    else {
-      println "Plugin 'Role Strategy' não encontrado!"
-    }
-
-}
-
 
 
 def associaRegra(pUsuario, pRegraProjeto){
+	def ldapGroupName = pUsuario
+	def projectPrefix = pRegraProjeto
+	  
+	def authStrategy = Hudson.instance.getAuthorizationStrategy()
 
-    def estrategiaAutorizacao = Hudson.instance.getAuthorizationStrategy()
+	//Criacao do usuário
+	jenkins.model.Jenkins.instance.securityRealm.createAccount("user1", "password123")
 
-    //criacao de role e atribuicao
-    if(estrategiaAutorizacao instanceof RoleBasedAuthorizationStrategy){
-      RoleBasedAuthorizationStrategy estrategiaRegra = (RoleBasedAuthorizationStrategy) estrategiaAutorizacao
+	//criacao de role e atribuicao
+	if(authStrategy instanceof RoleBasedAuthorizationStrategy){
+	  RoleBasedAuthorizationStrategy roleAuthStrategy = (RoleBasedAuthorizationStrategy) authStrategy
 
-      // Make constructors available
-      Constructor[] constrs = Role.class.getConstructors();
-      for (Constructor<?> c : constrs) {
-        c.setAccessible(true);
-      }
-      // Make the method assignRole accessible
-      Method assignRoleMethod = RoleBasedAuthorizationStrategy.class.getDeclaredMethod("assignRole", String.class, Role.class, String.class);
-      assignRoleMethod.setAccessible(true);
+	  // Make constructors available
+	  Constructor[] constrs = Role.class.getConstructors();
+	  for (Constructor<?> c : constrs) {
+	    c.setAccessible(true);
+	  }
+	  // Make the method assignRole accessible
+	  Method assignRoleMethod = RoleBasedAuthorizationStrategy.class.getDeclaredMethod("assignRole", String.class, Role.class, String.class);
+	  assignRoleMethod.setAccessible(true);
 
-      // Create role
-      Set<Permission> permissoes = new HashSet<Permission>();
-      permissoes.add(Permission.fromId("hudson.model.Item.Read"));
-      permissoes.add(Permission.fromId("hudson.model.Item.Build"));
-      permissoes.add(Permission.fromId("hudson.model.Item.Workspace"));
-      permissoes.add(Permission.fromId("hudson.model.Item.Cancel"));
-      permissoes.add(Permission.fromId("hudson.model.Run.Delete"));
-      permissoes.add(Permission.fromId("hudson.model.Run.Update"));
-      
-      Role novaRegra = new Role(pRegraProjeto, permissoes);
-      estrategiaRegra.addRole(RoleBasedAuthorizationStrategy.PROJECT, novaRegra);
+	  // Create role
+	  Set<Permission> permissions = new HashSet<Permission>();
+	  permissions.add(Permission.fromId("hudson.model.Item.Read"));
+	  permissions.add(Permission.fromId("hudson.model.Item.Build"));
+	  permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+	  permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
+	  permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
+	  permissions.add(Permission.fromId("hudson.model.Run.Delete"));
+	  permissions.add(Permission.fromId("hudson.model.Run.Update"));
 
-      // assign the role
-      estrategiaRegra.assignRole(RoleBasedAuthorizationStrategy.PROJECT, novaRegra, pUsuario);
+	  Role newRole = new Role(projectPrefix, projectPrefix + ".*", permissions);
+	  roleAuthStrategy.addRole(RoleBasedAuthorizationStrategy.PROJECT, newRole);
 
-
-      pRegraProjeto="usuarios"
-      Set<Permission> permissoesGlobal = new HashSet<Permission>();
-      permissoesGlobal.add(Permission.fromId("hudson.model.Item.Read"));
-      permissoesGlobal.add(Permission.fromId("hudson.model.Item.Build"));
-      permissoesGlobal.add(Permission.fromId("hudson.model.Item.Workspace"));
-      permissoesGlobal.add(Permission.fromId("hudson.model.Item.Cancel"));
-      permissoesGlobal.add(Permission.fromId("hudson.model.Run.Delete"));
-      permissoesGlobal.add(Permission.fromId("hudson.model.Run.Update"));
-
-      Role novaRegraGlobal = new Role(pRegraProjeto, permissoesGlobal);
-      
-      // assign the role
-      
-      estrategiaRegra.assignRole(RoleBasedAuthorizationStrategy.GLOBAL, novaRegraGlobal, pUsuario);
-
-
-      println "Regra '"+ pRegraProjeto+"' associada ao usuário '"+pUsuario+"' com sucesso."
-
-
-    }
-    else {
-      println "Plugin 'Role Strategy' não encontrado!"
-    }
-
+	  // assign the role
+	  roleAuthStrategy.assignRole(RoleBasedAuthorizationStrategy.PROJECT, newRole, ldapGroupName);
+	  
+	  println "OK"
+	}
+	else {
+	  println "Role Strategy Plugin not found!"
+	}
 }
-
 
 
 criaUsuario("Bill","1")
 criaUsuario("Steve","1")
 criaUsuario("Linus","1")
 
-criaRegraProjeto("Windows")
-criaRegraProjeto("MacOS")
-criaRegraProjeto("Linux")
 
 associaRegra("Bill","Windows")
 associaRegra("Steve","MacOS")
