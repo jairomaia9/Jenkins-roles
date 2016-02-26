@@ -18,7 +18,7 @@ def criaUsuario(pUsuario, pSenha){
 
 
 
-def associaRegra(pUsuario, pRegraProjeto){
+def associaRegra(pUsuario, pProjeto, pRegraProjeto){
 	def ldapGroupName = pUsuario
 	def projectPrefix = pRegraProjeto
 	  
@@ -40,7 +40,22 @@ def associaRegra(pUsuario, pRegraProjeto){
 	  Method assignRoleMethod = RoleBasedAuthorizationStrategy.class.getDeclaredMethod("assignRole", String.class, Role.class, String.class);
 	  assignRoleMethod.setAccessible(true);
 
-	  // Create role
+	  //REGRAS GLOBAIS
+
+
+	  def roles = authStrategy.getRoleMap(authStrategy.GLOBAL).grantedRoles*; //.key.name.sort()
+
+
+		for (regra in roles) {
+		    if (regra.name=="usuarios") {
+		        roleAuthStrategy.assignRole(RoleBasedAuthorizationStrategy.GLOBAL, regra, ldapGroupName);
+		    }
+		}
+
+
+
+
+	  // REGRAS DE PROJETO
 	  Set<Permission> permissions = new HashSet<Permission>();
 
 	  switch(pRegraProjeto) {
@@ -55,6 +70,36 @@ def associaRegra(pUsuario, pRegraProjeto){
 	  		break;
 
 	  	case "developer":
+	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
+			permissions.add(Permission.fromId("hudson.model.Item.Build"));
+			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
+			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
+			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
+			permissions.add(Permission.fromId("hudson.model.Run.Update"));
+	  		break;
+
+	  	case "tester":
+	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
+			permissions.add(Permission.fromId("hudson.model.Item.Build"));
+			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
+			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
+			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
+			permissions.add(Permission.fromId("hudson.model.Run.Update"));
+	  		break;
+
+	  	case "manager":
+	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
+			permissions.add(Permission.fromId("hudson.model.Item.Build"));
+			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
+			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
+			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
+			permissions.add(Permission.fromId("hudson.model.Run.Update"));
+	  		break;
+
+	  	case "reader":
 	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
 			permissions.add(Permission.fromId("hudson.model.Item.Build"));
 			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
@@ -98,3 +143,51 @@ associaRegra("Bill","Windows")
 associaRegra("Steve","MacOS")
 associaRegra("Linus","Linux")
 
+
+/*
+Sugestão de criação de regras
+========================================
+
+
+builder_role
+=====================
+
+Job | Create
+Job | Delete
+Job | Configure
+Job | Build
+Job | Workspace
+
+developer_role
+=====================
+Job | Build
+
+tester_role
+=====================
+Job | Build
+Job | Workspace
+SCM | Tag
+
+manager_role
+=====================
+Job | Create
+Job | Delete
+View | Create
+View | Delete
+View | Configure
+Group | Manage
+
+admin_role
+=====================
+Overall | Administer
+
+reader_role
+=====================
+Overall | Read
+Job | Read
+Group | View
+Role | View
+
+fonte: https://documentation.cloudbees.com/docs/cje-user-guide/rbac-sect-sample-configs.html
+
+*/
