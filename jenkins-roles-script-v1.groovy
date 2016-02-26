@@ -42,13 +42,39 @@ def associaRegra(pUsuario, pRegraProjeto){
 
 	  // Create role
 	  Set<Permission> permissions = new HashSet<Permission>();
-	  permissions.add(Permission.fromId("hudson.model.Item.Read"));
-	  permissions.add(Permission.fromId("hudson.model.Item.Build"));
-	  permissions.add(Permission.fromId("hudson.model.Item.Configure"));
-	  permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
-	  permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
-	  permissions.add(Permission.fromId("hudson.model.Run.Delete"));
-	  permissions.add(Permission.fromId("hudson.model.Run.Update"));
+
+	  switch(pRegraProjeto) {
+	  	case "buider":
+	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
+			permissions.add(Permission.fromId("hudson.model.Item.Build"));
+			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
+			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
+			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
+			permissions.add(Permission.fromId("hudson.model.Run.Update"));
+	  		break;
+
+	  	case "developer":
+	  		permissions.add(Permission.fromId("hudson.model.Item.Read"));
+			permissions.add(Permission.fromId("hudson.model.Item.Build"));
+			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
+			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
+			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
+			permissions.add(Permission.fromId("hudson.model.Run.Update"));
+	  		break;
+
+	  	default:
+			permissions.add(Permission.fromId("hudson.model.Item.Read"));
+			permissions.add(Permission.fromId("hudson.model.Item.Build"));
+			permissions.add(Permission.fromId("hudson.model.Item.Configure"));
+			permissions.add(Permission.fromId("hudson.model.Item.Workspace"));
+			permissions.add(Permission.fromId("hudson.model.Item.Cancel"));
+			permissions.add(Permission.fromId("hudson.model.Run.Delete"));
+			permissions.add(Permission.fromId("hudson.model.Run.Update"));
+	  		break;
+	  }
+	  
 
 	  Role newRole = new Role(projectPrefix, projectPrefix + ".*", permissions);
 	  roleAuthStrategy.addRole(RoleBasedAuthorizationStrategy.PROJECT, newRole);
